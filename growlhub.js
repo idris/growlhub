@@ -1,8 +1,16 @@
+#!/usr/local/bin/node
+
 var sys = require('sys');
 
-var growl = require('growl');
-
 var github = require('./github');
+
+try {
+	var growl = require('growl');
+} catch(ex) {
+	sys.puts('You need the growl module. http://github.com/visionmedia/node-growl');
+	exit(1);
+}
+
 
 var lastCommitId = null;
 
