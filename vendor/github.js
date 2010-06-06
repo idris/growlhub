@@ -1,5 +1,6 @@
-var sys = require('sys');
-var http = require('http');
+var sys = require('sys'),
+	http = require('http'),
+	querystring = require('querystring');
 
 exports.init = function(login, token, secure) {
 	secure = secure ? true : false;
@@ -10,10 +11,11 @@ exports.init = function(login, token, secure) {
 			var client;
 			var request;
 
+			client = http.createClient((secure ? 443 : 80), 'github.com', secure);
+
 			if(login && token) {
-				client = http.createClient(80, 'github.com', secure, {});
-			} else {
-				client = http.createClient(80, 'github.com', secure);
+				var params = { 'login': login, 'token': token }
+				url += '?' + querystring.stringify(params);
 			}
 
 			request = client.request('GET', url, {'Accept':'*/*','Host':'github.com','User-Agent':'Idris'});
@@ -21,14 +23,23 @@ exports.init = function(login, token, secure) {
 				var statusCode = resp.statusCode;
 				var content = '';
 
-				if(statusCode != 200) return sys.puts('Request to ' + url + ' failed with ' + statusCode + ' error code.');
+				if(statusCode != 200) {
+					if(statusCode == 406) {
+						sys.log('Access denied (error 406) for ' + o.path);
+					} else {
+						sys.log('Request to ' + url + ' failed with ' + statusCode + ' error code.');
+					}
+
+					if(typeof(o.errorCallback) == 'function') o.errorCallback(statusCode);
+					return;
+				}
 
 				resp.addListener('data', function(chunk) {
 					content += chunk;
 				});
 
 				resp.addListener('end', function() {
-					if(typeof(o.callback == 'function')) o.callback(JSON.parse(content));
+					if(typeof(o.callback) == 'function') o.callback(JSON.parse(content));
 				});
 			});
 
@@ -39,13 +50,14 @@ exports.init = function(login, token, secure) {
 		var pub = {};
 
 		pub.commits = {};
-		pub.commits.list = function(user_id, repository, branch, callback) {
+		pub.commits.list = function(user_id, repository, branch, callback, errorCallback) {
 			if(!branch) branch = 'master';
 			makeRequest({
 				path: 'commits/list/' + user_id + '/' + repository + '/' + branch,
 				callback: function(data) {
 					callback(data);
-				}
+				},
+				errorCallback: errorCallback
 			});
 		};
 
