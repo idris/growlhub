@@ -9,14 +9,13 @@ var sys = require('sys'),
 var repos = [];
 
 function checkOne(repo) {
-	sys.log('checking ' + repo.getPath() + ' since ' + repo.lastCommitId);
 	hub.commits.list(repo.user, repo.repo, repo.branch, function(data) {
 		for(var i=0;i<data.commits.length;i++) {
 			var commit = data.commits[i];
 			if(commit.id == repo.lastCommitId) break;
 
 			growl.notify(commit.message, {
-				'title': commit.author.name,
+				'title': commit.author.name + ' on ' + repo.getPath(),
 				'image': 'github-logo-128.png',
 				'name': 'growlhub'
 			});
