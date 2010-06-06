@@ -29,14 +29,7 @@ function check() {
 	repos.forEach(checkOne);
 }
 
-function register(user, repo, branch) {
-	var repo = {
-		user: user,
-		repo: repo,
-		branch: branch || 'master',
-		getPath: function() { return this.user + '/' + this.repo + '/' + this.branch }
-	};
-
+function register(repo) {
 	hub.commits.list(repo.user, repo.repo, repo.branch, function(data) {
 		try {
 			sys.puts('Monitoring ' + repo.getPath() + ' since ' + data.commits[0].id);
@@ -48,6 +41,19 @@ function register(user, repo, branch) {
 			sys.log(ex);
 		}
 	});
+}
+
+function createRepo(path) {
+	var split = path.split('/');
+
+	var repo = {
+		user: split[0],
+		repo: split[1],
+		branch: split[2] || 'master',
+		getPath: function() { return this.user + '/' + this.repo + '/' + this.branch }
+	};
+
+	return repo;
 }
 
 
@@ -93,6 +99,5 @@ opts.parse(options, arguments, true);
 var hub = github.init(opts.get('login'), opts.get('token'), opts.get('secure'));
 
 opts.args().forEach(function(path) {
-	var split = path.split('/');
-	register(split[0], split[1], split[2]);
+	register(createRepo(path));
 });
