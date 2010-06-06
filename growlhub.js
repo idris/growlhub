@@ -24,6 +24,8 @@ var check = function() {
 			var commit = data.commits[i];
 			if(commit.id == lastCommitId) break;
 
+			lastCommitId = commit.id;
+
 			growl.notify(commit.message, {
 				'title': commit.author.name,
 				'image': 'github-logo-128.png',
