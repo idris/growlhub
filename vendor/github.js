@@ -1,9 +1,27 @@
 var sys = require('sys'),
 	http = require('http'),
-	querystring = require('querystring');
+	querystring = require('querystring'),
+	fs = require('fs');
 
-exports.init = function(login, token, secure) {
-	secure = secure ? true : false;
+var defaultOptions = {};
+
+function loadDefaultOptions() {
+	try {
+		var data = fs.readFileSync(process.env['HOME'] + '/.gitconfig');
+		var match = data.toString().match(/\[github\]\s+user\s*=\s*([^\s]+)\s+token\s*=\s*([^\s]+)/m);
+		if(match) {
+			defaultOptions.githubLogin = match[1];
+			defaultOptions.githubToken = match[2];
+		}
+	} catch(ex) {}
+}
+
+exports.init = function(options) {
+	if(typeof(options) != 'object') options = {};
+	options.secure = options.secure ? true : false;
+	if(!options.login) options.login = defaultOptions.githubLogin;
+	if(!options.token) options.token = defaultOptions.githubToken;
+
 	return (function() {
 		// private
 		function makeRequest(o) {
@@ -11,10 +29,10 @@ exports.init = function(login, token, secure) {
 			var client;
 			var request;
 
-			client = http.createClient((secure ? 443 : 80), 'github.com', secure);
+			client = http.createClient((options.secure ? 443 : 80), 'github.com', options.secure);
 
-			if(login && token) {
-				var params = { 'login': login, 'token': token }
+			if(options.login && options.token) {
+				var params = { 'login': options.login, 'token': options.token }
 				url += '?' + querystring.stringify(params);
 			}
 
@@ -64,3 +82,5 @@ exports.init = function(login, token, secure) {
 		return pub;
 	})();
 };
+
+loadDefaultOptions();

@@ -96,7 +96,11 @@ var arguments = [
 ];
 opts.parse(options, arguments, true);
 
-var hub = github.init(opts.get('login'), opts.get('token'), opts.get('secure'));
+var hub = github.init({
+	login: opts.get('login'),
+	token: opts.get('token'),
+	secure: opts.get('secure')
+});
 
 opts.args().forEach(function(path) {
 	register(createRepo(path));
