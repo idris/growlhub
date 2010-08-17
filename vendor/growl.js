@@ -73,8 +73,9 @@ exports.notify = function(msg, options, callback) {
       args.push('--' + flag, image)
     }
     if (options.sticky) args.push('--sticky')
-    if (options.name) args.push('--name', options.name)
-    if (options.title) args.push(options.title)
+    if (options.name) args.push('--name', '"' + options.name + '"')
+    if (options.title) args.push('"' + options.title + '"')
+    sys.log(args.join(' '));
     child_process.exec(args.join(' '), callback)
   })
 }
