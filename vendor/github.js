@@ -21,7 +21,6 @@ exports.init = function(options) {
 	options.secure = options.secure ? true : false;
 	if(!options.login) options.login = defaultOptions.githubLogin;
 	if(!options.token) options.token = defaultOptions.githubToken;
-
 	return (function() {
 		// private
 		function makeRequest(o) {
@@ -77,6 +76,16 @@ exports.init = function(options) {
 				},
 				errorCallback: errorCallback
 			});
+		};
+		pub.watched = {};
+		pub.watched.list = function(callback, errorCallback)  {
+		    makeRequest({
+		        path: 'repos/watched/' + defaultOptions.githubLogin,
+		        callback: function(data) {
+		            callback(data);
+		        },
+		        errorCallback: errorCallback
+		    });
 		};
 
 		return pub;

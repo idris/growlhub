@@ -13,12 +13,13 @@ function checkOne(repo) {
 		for(var i=0;i<data.commits.length;i++) {
 			var commit = data.commits[i];
 			if(commit.id == repo.lastCommitId) break;
-
+            var title = commit.author.name + ' on ' + repo.getPath();
+            sys.puts('Notifying '+ title);
 			growl.notify(commit.message, {
-				'title': commit.author.name + ' on ' + repo.getPath(),
+				'title': title,
 				'image': 'github-logo-128.png',
 				'name': 'growlhub'
-			});
+			}, function(res){});
 		}
 
 		repo.lastCommitId = data.commits[0].id;
@@ -41,6 +42,24 @@ function register(repo) {
 			sys.log(ex);
 		}
 	});
+}
+
+function registerAll(){
+    hub.watched.list(function(data) {
+       try {
+           data.repositories.forEach(function(repository){
+                path = repository.url.split('http://github.com/')[1];
+                if (!path) {
+                    path = repository.url.split('https://github.com/')[1]
+/*                    sys.log('unable to parse ' + repository.url);
+                    return;
+*/                }
+                register(createRepo(path));
+           });
+       } catch(ex) {
+           sys.log(ex);
+       }
+    });
 }
 
 function createRepo(path) {
@@ -103,5 +122,9 @@ var hub = github.init({
 });
 
 opts.args().forEach(function(path) {
-	register(createRepo(path));
+    if (path == 'all') {
+        registerAll();
+    } else {
+        register(createRepo(path));
+    }
 });
