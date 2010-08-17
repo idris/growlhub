@@ -6,7 +6,8 @@
  */
 
 var child_process = require('child_process'),
-    path = require('path')
+    path = require('path'),
+    sys = require('sys')
 
 /**
  * Node-growl version.
