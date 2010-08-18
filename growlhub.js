@@ -22,7 +22,8 @@ function checkOne(repo) {
 			growl.notify(commit.message, {
 				'title': title,
 				'image': 'github-logo-128.png',
-				'name': 'growlhub'
+				'name': 'growlhub',
+				'sticky' : opts.get('sticky') === true
 			}, function(res){});
 		}
 		repo.lastCommitId = data.commits[0].id;
@@ -82,10 +83,16 @@ function createRepo(path) {
 }
 
 function version() { 
-    sys.puts('GrowlHub version 1.0');
-    var child = growl.binVersion(function(err, version){
-        sys.puts(version);
-    })
+	sys.puts('GrowlHub version 1.0');
+	var child = growl.binVersion(function(err, version){
+		sys.puts(version);
+	})
+	// also post to growl so we know it's configured correctly
+	growl.notify('GrowlHub version 1.0', {
+		'image': 'github-logo-128.png',
+		'name': 'growlhub',
+		'sticky' : opts.get('sticky') === true
+	}, function(res){});
 }
 
 var options = [
@@ -114,6 +121,10 @@ var options = [
 		long: 'token',
 		description: 'Github token for authentication (Get one here: https://github.com/account )',
 		value: true
+	},
+	{
+		long: 'sticky',
+		description: 'sticky growl notifications'
 	},
 	{
 		short: 'a',
