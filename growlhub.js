@@ -1,6 +1,7 @@
 #!/usr/local/bin/node
 
 var sys = require('sys'),
+    url = require('url'),
 	github = require('./vendor/github'),
 	growl = require('./vendor/growl'),
 	opts = require('./vendor/opts');
@@ -8,20 +9,22 @@ var sys = require('sys'),
 
 var repos = [];
 
+/*
+* @param {object} repo
+*/
 function checkOne(repo) {
 	hub.commits.list(repo.user, repo.repo, repo.branch, function(data) {
 		for(var i=0;i<data.commits.length;i++) {
 			var commit = data.commits[i];
 			if(commit.id == repo.lastCommitId) break;
-            var title = commit.author.name + ' on ' + repo.getPath();
-            sys.puts('Notifying '+ title);
+			var title = commit.author.name + ' on ' + repo.getPath();
+			sys.puts(commit.message + ' ' + title);
 			growl.notify(commit.message, {
 				'title': title,
 				'image': 'github-logo-128.png',
 				'name': 'growlhub'
 			}, function(res){});
 		}
-
 		repo.lastCommitId = data.commits[0].id;
 	});
 }
@@ -30,6 +33,9 @@ function check() {
 	repos.forEach(checkOne);
 }
 
+/*
+* @param {object} repo
+*/
 function register(repo) {
 	hub.commits.list(repo.user, repo.repo, repo.branch, function(data) {
 		try {
@@ -48,13 +54,10 @@ function registerAll(){
     hub.watched.list(function(data) {
        try {
            data.repositories.forEach(function(repository){
-                path = repository.url.split('http://github.com/')[1];
-                if (!path) {
-                    path = repository.url.split('https://github.com/')[1]
-/*                    sys.log('unable to parse ' + repository.url);
-                    return;
-*/                }
-                register(createRepo(path));
+               // repository.url == http[s]://github.com/idris/growlhub/master
+               var parsed_url = url.parse(repository.url),
+                    repository_name = parsed_url.pathname.substr(1);
+               register(createRepo(repository_name));
            });
        } catch(ex) {
            sys.log(ex);
@@ -62,6 +65,9 @@ function registerAll(){
     });
 }
 
+/*
+* @param {string} path
+*/
 function createRepo(path) {
 	var split = path.split('/');
 
@@ -75,13 +81,18 @@ function createRepo(path) {
 	return repo;
 }
 
+function version() { 
+    sys.puts('GrowlHub version 1.0');
+    var child = growl.binVersion(function(err, version){
+        sys.puts(version);
+    })
+}
 
 var options = [
 	{
 		short: 'v',
 		long: 'version',
 		description: 'Show version information',
-		callback: function() { sys.puts('GrowlHub version 1.0'); process.exit(0); }
 	},
 	{
 		short: 't',
@@ -104,11 +115,15 @@ var options = [
 		description: 'Github token for authentication (Get one here: https://github.com/account )',
 		value: true
 	},
-];
+	{
+		short: 'a',
+		long: 'all',
+		description: 'Track all watched repositories on github (read login from .git or --login)'
+	}];
 var arguments = [
 	{
 		name: 'repository',
-		required: true,
+		required: false,
 		description: 'e.g. idris/growlhub/master'
 	},
 	{ name: '...' }
@@ -121,10 +136,20 @@ var hub = github.init({
 	secure: opts.get('secure')
 });
 
-opts.args().forEach(function(path) {
-    if (path == 'all') {
-        registerAll();
-    } else {
-        register(createRepo(path));
-    }
-});
+if (opts.get('version') === true) {
+	version();
+}
+else if (opts.get('help') === true){
+	opts.help();
+}
+else if(opts.get('all') === undefined && opts.args().length === 0) {
+	sys.puts('repository or --all required');
+	opts.help();
+}
+else if (opts.get('all') === true) {
+	registerAll();
+} else if (opts.args()) {
+	opts.args().forEach(function(path){
+		register(createRepo(path));
+	})
+}

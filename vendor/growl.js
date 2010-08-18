@@ -23,8 +23,8 @@ exports.version = '1.0.1'
  */
   
 exports.binVersion = function(callback) {
-  child_process.exec('growlnotify -v', function(err, stdout, stderr){
-    if (err) callback(err)
+  return child_process.exec('growlnotify -v', function(err, stdout, stderr){
+    if (err !== null) callback(err)
     else callback(null, stdout)
   })
 }
@@ -59,6 +59,7 @@ exports.binVersion = function(callback) {
  */
 
 exports.notify = function(msg, options, callback) {
+    // TODO: properly escape name, title, msg
   var image,
       args = ['growlnotify', '-m', '"' + msg + '"'],
       options = options || {}
@@ -76,7 +77,6 @@ exports.notify = function(msg, options, callback) {
     if (options.sticky) args.push('--sticky')
     if (options.name) args.push('--name', '"' + options.name + '"')
     if (options.title) args.push('"' + options.title + '"')
-    sys.log(args.join(' '));
     child_process.exec(args.join(' '), callback)
   })
 }
