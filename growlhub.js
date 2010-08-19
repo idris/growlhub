@@ -71,11 +71,11 @@ function watchPrivateFeed(){
         if(typeof(interval) == 'undefined'){
             interval = setInterval(watchPrivateFeed, opts.get('t') || 30000);
         } 
-        var i=0
+        var i=0, new_id=null;
         for(;i<data.length;i+=1){
             var d = data[i];
-            // skip these
-            if (['FollowEvent', 'PublicEvent', 'WatchEvent'].indexOf(d.type) !== -1) {
+            // skip these types of events in your user stream
+            if (['FollowEvent', 'PublicEvent', 'WatchEvent', 'IssuesEvent'].indexOf(d.type) !== -1) {
                 continue;
             }
 /*            sys.puts(sys.inspect(d));*/
@@ -83,9 +83,11 @@ function watchPrivateFeed(){
             if (last_commit_id !== null && last_commit_id == commit_id){
                 return;
             }
+            if (new_id === null) {
+                new_id = commit_id;
+            }
             if (last_commit_id === null){
                 sys.puts('Last seen action was ' + commit_id);
-                last_commit_id = commit_id;
                 break;
             }
             
@@ -110,6 +112,9 @@ function watchPrivateFeed(){
                     'sticky' : opts.get('sticky') === true
                 }, function(res){})
             }
+        }
+        if (new_id !== null) {
+            last_commit_id = new_id;
         }
     })
 }
