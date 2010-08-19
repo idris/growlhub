@@ -8,6 +8,7 @@ var sys = require('sys'),
 
 
 var repos = [];
+var last_commit_id = null;
 
 /*
 * @param {object} repo
@@ -64,6 +65,53 @@ function registerAll(){
            sys.log(ex);
        }
     });
+}
+function watchPrivateFeed(){
+    hub.private_feed.list(function(data) {
+        if(typeof(interval) == 'undefined'){
+            interval = setInterval(watchPrivateFeed, opts.get('t') || 30000);
+        } 
+        var i=0
+        for(;i<data.length;i+=1){
+            var d = data[i];
+            // skip these
+            if (['FollowEvent', 'PublicEvent', 'WatchEvent'].indexOf(d.type) !== -1) {
+                continue;
+            }
+/*            sys.puts(sys.inspect(d));*/
+            var commit_id = d.sha || d.payload.commit || d.payload.head;
+            if (last_commit_id !== null && last_commit_id == commit_id){
+                return;
+            }
+            if (last_commit_id === null){
+                sys.puts('Last seen action was ' + commit_id);
+                last_commit_id = commit_id;
+                break;
+            }
+            
+            // notify
+            var repo = d.repository.name;
+            if (d.shas && d.shas.lenght >= 1 && d.type === "PushEvent") {
+                d.shas.forEach(function(commit) {
+                    var message = commit[2], action=commit[3] + ' commmited to ' + repo;
+                    growl.notify(message, {
+                        'title': action,
+                        'image': 'github-logo-128.png',
+                        'name': 'growlhub',
+                        'sticky' : opts.get('sticky') === true
+                    }, function(res){});
+                });
+            } else {
+                var actor = d.actor;
+                growl.notify([actor, repo].join(' '), {
+                    'type': d.type,
+                    'image': 'github-logo-128.png',
+                    'name': 'growlhub',
+                    'sticky' : opts.get('sticky') === true
+                }, function(res){})
+            }
+        }
+    })
 }
 
 /*
@@ -147,6 +195,12 @@ var hub = github.init({
 	secure: opts.get('secure')
 });
 
+if (opts.get('t') !== undefined && opts.get('t') < 1000)  {
+    sys.puts('--interval must be in miliseconds, not seconds');
+    opts.help();
+    process.exit(1);
+}
+
 if (opts.get('version') === true) {
 	version();
 }
@@ -158,7 +212,7 @@ else if(opts.get('all') === undefined && opts.args().length === 0) {
 	opts.help();
 }
 else if (opts.get('all') === true) {
-	registerAll();
+	watchPrivateFeed();
 } else if (opts.args()) {
 	opts.args().forEach(function(path){
 		register(createRepo(path));

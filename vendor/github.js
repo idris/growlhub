@@ -24,7 +24,7 @@ exports.init = function(options) {
 	return (function() {
 		// private
 		function makeRequest(o) {
-			var url = '/api/v2/json/' + o.path;
+			var url = o.path;
 			var client;
 			var request;
 
@@ -70,7 +70,7 @@ exports.init = function(options) {
 		pub.commits.list = function(user_id, repository, branch, callback, errorCallback) {
 			if(!branch) branch = 'master';
 			makeRequest({
-				path: 'commits/list/' + user_id + '/' + repository + '/' + branch,
+				path: '/api/v2/json/commits/list/' + user_id + '/' + repository + '/' + branch,
 				callback: function(data) {
 					callback(data);
 				},
@@ -80,13 +80,24 @@ exports.init = function(options) {
 		pub.watched = {};
 		pub.watched.list = function(callback, errorCallback)  {
 		    makeRequest({
-		        path: 'repos/watched/' + defaultOptions.githubLogin,
+		        path: '/api/v2/json/repos/watched/' + defaultOptions.githubLogin,
 		        callback: function(data) {
 		            callback(data);
 		        },
 		        errorCallback: errorCallback
 		    });
 		};
+		pub.private_feed = {};
+		pub.private_feed.list = function(callback, errorCallback) {
+		    // TODO: require options.login
+		    makeRequest({
+		        path: '/' + defaultOptions.githubLogin + '.private.json',
+		        callback : function(data) {
+		            callback(data);
+		        },
+		        errorCallback: errorCallback
+		    })
+		}
 
 		return pub;
 	})();
