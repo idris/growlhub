@@ -75,11 +75,11 @@ function watchPrivateFeed(){
         for(;i<data.length;i+=1){
             var d = data[i];
             // skip these types of events in your user stream
-            if (['FollowEvent', 'PublicEvent', 'WatchEvent', 'IssuesEvent'].indexOf(d.type) !== -1) {
+            // TODO: really just need to figure out how to format notification's for these events
+            if (['FollowEvent', 'PublicEvent', 'WatchEvent', 'CreateEvent', 'DeleteEvent', 'MemberEvent'].indexOf(d.type) !== -1) {
                 continue;
             }
-/*            sys.puts(sys.inspect(d));*/
-            var commit_id = d.sha || d.payload.commit || d.payload.head;
+            var commit_id = d.sha || d.payload.commit || d.payload.head || d.payload.issue;
             if (last_commit_id !== null && last_commit_id == commit_id){
                 return;
             }
@@ -87,13 +87,26 @@ function watchPrivateFeed(){
                 new_id = commit_id;
             }
             if (last_commit_id === null){
-                sys.puts('Last seen action was ' + commit_id);
+                if (opts.get('debug') === true) sys.puts('Last seen action was ' + commit_id);
                 break;
+            }
+            if (opts.get('debug') === true) {
+                sys.puts(sys.inspect(d));
+                sys.log('checking id' + commit_id);
             }
             
             // notify
             var repo = d.repository.name;
-            if (d.shas && d.shas.lenght >= 1 && d.type === "PushEvent") {
+            if (d.type === "IssuesEvent") {
+                var message = d.actor + ' ' + d.payload.action + ' Issue ' + d.payload.number + ' on ' + repo;
+                growl.notify(message, {
+                    'title': d.payload.action,
+                    'image': 'github-logo-128.png',
+                    'name': 'growlhub',
+                    'sticky' : opts.get('sticky') === true
+                }, function(res){});
+            }
+            else if (d.shas && d.shas.length >= 1 && d.type === "PushEvent") {
                 d.shas.forEach(function(commit) {
                     var message = commit[2], action=commit[3] + ' commmited to ' + repo;
                     growl.notify(message, {
@@ -105,7 +118,7 @@ function watchPrivateFeed(){
                 });
             } else {
                 var actor = d.actor;
-                growl.notify([actor, repo].join(' '), {
+                growl.notify([actor, repo, d.type].join(' '), {
                     'type': d.type,
                     'image': 'github-logo-128.png',
                     'name': 'growlhub',
@@ -114,6 +127,7 @@ function watchPrivateFeed(){
             }
         }
         if (new_id !== null) {
+            if (last_commit_id !== null) sys.puts('marking as seen ' + new_id);
             last_commit_id = new_id;
         }
     })
@@ -149,6 +163,11 @@ function version() {
 }
 
 var options = [
+    {
+    	short: 'd',
+    	long: 'debug',
+    	description: 'Print Debug information',
+    },
 	{
 		short: 'v',
 		long: 'version',
