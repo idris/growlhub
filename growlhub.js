@@ -8,7 +8,8 @@ var sys = require('sys'),
 
 
 var repos = [];
-var last_commit_id = null;
+// watchPrivateFeed keeps track of the last n commit id's it's seen
+var seen_commits = [];
 
 /*
 * @param {object} repo
@@ -80,55 +81,60 @@ function watchPrivateFeed(){
                 continue;
             }
             var commit_id = d.sha || d.payload.commit || d.payload.head || d.payload.issue;
-            if (last_commit_id !== null && last_commit_id == commit_id){
+            if (seen_commits.indexOf(commit_id) !== -1) {
                 return;
             }
-            if (new_id === null) {
-                new_id = commit_id;
-            }
-            if (last_commit_id === null){
-                if (opts.get('debug') === true) sys.puts('Last seen action was ' + commit_id);
-                break;
-            }
+            seen_commits.push(commit_id);
+            
             if (opts.get('debug') === true) {
                 sys.puts(sys.inspect(d));
-                sys.log('checking id' + commit_id);
+                sys.log('marging as seen id' + commit_id);
             }
             
             // notify
             var repo = d.repository.name;
             if (d.type === "IssuesEvent") {
-                var message = d.actor + ' ' + d.payload.action + ' Issue ' + d.payload.number + ' on ' + repo;
+                // create/close issue
+                var message = d.actor + ' ' + d.payload.action + ' Issue ' + d.payload.number;
+                var title = repo + ' Issue ' + d.payload.action;
                 growl.notify(message, {
-                    'title': d.payload.action,
+                    'title': title,
                     'image': 'github-logo-128.png',
                     'name': 'growlhub',
                     'sticky' : opts.get('sticky') === true
                 }, function(res){});
             }
-            else if (d.shas && d.shas.length >= 1 && d.type === "PushEvent") {
-                d.shas.forEach(function(commit) {
-                    var message = commit[2], action=commit[3] + ' commmited to ' + repo;
+            else if (d.payload && d.payload.shas && d.payload.shas.length >= 1 && d.type === "PushEvent") {
+                // code commit message. this could include several commits
+                d.payload.shas.forEach(function(commit) {
+                    if (opts.get('debug') === true){
+                        sys.puts(sys.inspect(commit));
+                    }
+                    var message = 'by ' + commit[3] + '\n' + commit[2], title="Commit to " + repo;
                     growl.notify(message, {
-                        'title': action,
+                        'title': title,
                         'image': 'github-logo-128.png',
                         'name': 'growlhub',
                         'sticky' : opts.get('sticky') === true
                     }, function(res){});
                 });
+            } else if (d.type == "CommitCommentEvent") {
+                // TODO: go fetch the comment contents
+                growl.notify("by " + d.actor, {
+                    'title': "Comment on " + repo,
+                    'image': 'github-logo-128.png',
+                    'name': 'growlhub',
+                    'sticky' : opts.get('sticky') === true
+                }, function(res){})
             } else {
                 var actor = d.actor;
-                growl.notify([actor, repo, d.type].join(' '), {
-                    'type': d.type,
+                growl.notify([actor, "on", repo].join(' '), {
+                    'title': d.type,
                     'image': 'github-logo-128.png',
                     'name': 'growlhub',
                     'sticky' : opts.get('sticky') === true
                 }, function(res){})
             }
-        }
-        if (new_id !== null) {
-            if (last_commit_id !== null) sys.puts('marking as seen ' + new_id);
-            last_commit_id = new_id;
         }
     })
 }
