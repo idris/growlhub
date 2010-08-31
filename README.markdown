@@ -13,4 +13,15 @@ Requirements
 
 Usage
 -----
+
+To track one or more repositories:
+
 `node growlhub.js user/repository/branch`
+
+To track your github.com user/repository watch list
+
+`node growlhub.js --all`
+
+For more options:
+
+`node growlhub.js --help`
