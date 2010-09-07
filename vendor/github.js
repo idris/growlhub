@@ -29,6 +29,10 @@ exports.init = function(options) {
 			var request;
 
 			client = http.createClient((options.secure ? 443 : 80), 'github.com', options.secure);
+			client.addListener('error', function(error) {
+				sys.puts('client error: ' + error);
+				if (typeof(o.errorCallback) == 'function') o.errorCallback(499);
+			});
 
 			if(options.login && options.token) {
 				var params = { 'login': options.login, 'token': options.token }
@@ -79,26 +83,25 @@ exports.init = function(options) {
 		};
 		pub.watched = {};
 		pub.watched.list = function(callback, errorCallback)  {
-		    makeRequest({
-		        path: '/api/v2/json/repos/watched/' + defaultOptions.githubLogin,
-		        callback: function(data) {
-		            callback(data);
-		        },
-		        errorCallback: errorCallback
-		    });
+			makeRequest({
+				path: '/api/v2/json/repos/watched/' + defaultOptions.githubLogin,
+				callback: function(data) {
+					callback(data);
+				},
+				errorCallback: errorCallback
+			});
 		};
 		pub.private_feed = {};
 		pub.private_feed.list = function(callback, errorCallback) {
-		    // TODO: require options.login
-		    makeRequest({
-		        path: '/' + defaultOptions.githubLogin + '.private.json',
-		        callback : function(data) {
-		            callback(data);
-		        },
-		        errorCallback: errorCallback
-		    })
+			// TODO: require options.login
+			makeRequest({
+			path: '/' + defaultOptions.githubLogin + '.private.json',
+				callback : function(data) {
+					callback(data);
+				},
+				errorCallback: errorCallback
+			})
 		}
-
 		return pub;
 	})();
 };
