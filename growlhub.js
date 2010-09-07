@@ -104,6 +104,17 @@ function watchPrivateFeed(){
                     'sticky' : opts.get('sticky') === true
                 }, function(res){});
             }
+            else if (d.type === "GistEvent") {
+                // create/? Gist
+                var message = d.payload.snippet;
+                var title = d.actor + ' ' + d.payload.action + ' ' + d.payload.name;
+                growl.notify(message, {
+                    'title': title,
+                    'image': 'github-logo-128.png',
+                    'name': 'growlhub',
+                    'sticky' : opts.get('sticky') === true
+                }, function(res){});
+            }
             else if (d.payload && d.payload.shas && d.payload.shas.length >= 1 && d.type === "PushEvent") {
                 // code commit message. this could include several commits
                 d.payload.shas.forEach(function(commit) {
