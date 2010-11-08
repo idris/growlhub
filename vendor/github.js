@@ -18,7 +18,6 @@ function loadDefaultOptions() {
 
 exports.init = function(options) {
 	if(typeof(options) != 'object') options = {};
-	options.secure = options.secure ? true : false;
 	if(!options.login) options.login = defaultOptions.githubLogin;
 	if(!options.token) options.token = defaultOptions.githubToken;
 	return (function() {
@@ -28,7 +27,7 @@ exports.init = function(options) {
 			var client;
 			var request;
 
-			client = http.createClient((options.secure ? 443 : 80), 'github.com', options.secure);
+			client = http.createClient(443, 'github.com', true);
 			client.addListener('error', function(error) {
 				sys.puts('client error: ' + error);
 				if (typeof(o.errorCallback) == 'function') o.errorCallback(499);

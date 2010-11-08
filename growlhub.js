@@ -197,11 +197,6 @@ var options = [
 		value: true
 	},
 	{
-		short: 's',
-		long: 'secure',
-		description: 'Use https'
-	},
-	{
 		long: 'login',
 		description: 'Github login for authentication',
 		value: true
@@ -233,7 +228,6 @@ opts.parse(options, arguments, true);
 var hub = github.init({
 	login: opts.get('login'),
 	token: opts.get('token'),
-	secure: opts.get('secure')
 });
 
 if (opts.get('t') !== undefined && opts.get('t') < 1000)  {
